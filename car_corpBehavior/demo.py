@@ -33,8 +33,8 @@ if __name__ == '__main__':
 
 
     """
-    if need, initialize a model.
-    ** .fit(), .predict() methods are necessary. **
+    if need use customized model, initialize it (See following example).
+    ** .fit(), .predict_proba() methods are necessary for customized model. **
     """
     used_model = LGBMClassifier(
                 objective='binary',
@@ -47,11 +47,16 @@ if __name__ == '__main__':
 
     """
     Train model.
+    pos_label: positive label, '2' means Crops and '1' means Natures in this case.
     """
     cpl = model.car_potential_legal(model=used_model, pos_label='2', neg_label='1') # init_model
+        """
+        Using default model:
+        cpl = model.car_potential_legal(pos_label='2', neg_label='1')
+        """
     cpl.fit(X_train, y_train, K=10) # fit
-    cpl.model.feature_name_
-    for k, v in cpl.scores.items():
+    cpl.model.feature_name_ #check feature_name_
+    for k, v in cpl.scores.items(): #show scores
         print(k, end='')
         if isinstance(v, dict):
             print()
@@ -61,14 +66,13 @@ if __name__ == '__main__':
             print(f': {v:.1%}')
 
     """
-    Save trained preprocess pipeline & model with pickle.
+    Save trained preprocess pipeline(feature_name_ particularly, i.e. used columns) & model with pickle.
     """
     with open('./trained_model/trained_cpl.pickle', 'wb') as f:
         pickle.dump(cpl, f)
 
-
     """
-    Use trained model with pickle.
+    Use trained model. (Read saved model with pickle first).
     """
     with open('./trained_model/trained_cpl.pickle', 'rb') as f:
         trained_cpl2 = pickle.load(f)
