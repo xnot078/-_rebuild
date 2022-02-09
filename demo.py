@@ -3,15 +3,15 @@ import pickle
 from lightgbm import LGBMClassifier # not necessary, just for example
 from sklearn import model_selection
 
-from src import model
-from src import pipe_Xy
+from car_corpBehavior.src import model
+from car_corpBehavior.src import pipe_Xy
 
 if __name__ == '__main__':
 
     """
     input data. (type of X, y must be pandas.core.DataFrame and pandas.core.Series.)
     """
-    raw = pd.read_parquet('./data/medium_pivot/ptByPerson_險別車種分開_v5.parq')
+    raw = pd.read_parquet('./car_corpBehavior/data/medium_pivot/ptByPerson_險別車種分開_v5.parq')
     X, y = raw.drop('fassured', axis=1), raw['fassured']
 
     """
@@ -68,21 +68,19 @@ if __name__ == '__main__':
     """
     Save trained preprocess pipeline(feature_name_ particularly, i.e. used columns) & model with pickle.
     """
-    with open('./trained_model/trained_cpl.pickle', 'wb') as f:
+    with open('./car_corpBehavior/trained_model/trained_cpl.pickle', 'wb') as f:
         pickle.dump(cpl, f)
 
     """
     Use trained model. (Read saved model with pickle first).
     """
-    with open('./trained_model/trained_cpl.pickle', 'rb') as f:
+    with open('./car_corpBehavior/trained_model/trained_cpl.pickle', 'rb') as f:
         trained_cpl2 = pickle.load(f)
 
     X_test = X.loc[X.index.difference(X_train.index)]
     y_test = y.loc[X_test.index]
     y_test = y_test.apply(lambda x: 1 if x=='2' else 0)
     y_pred_proba = trained_cpl2.predict_proba(X_test)
-
-
 
 
 

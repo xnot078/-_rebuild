@@ -38,7 +38,7 @@
 import pandas as pd
 import pickle
 
-raw = pd.read_parquet('./data/medium_pivot/ptByPerson_險別車種分開_v5.parq') #範例資料請另外要求
+raw = pd.read_parquet('./car_corpBehavior/data/medium_pivot/ptByPerson_險別車種分開_v5.parq') #範例資料請另外要求
 X, y = raw.drop('fassured', axis=1), raw['fassured']
 
 with open('./trained_model/trained_cpl.pickle', 'rb') as f:
@@ -50,23 +50,31 @@ y_pred_proba = trained_cpl.predict_proba(X)
 ```python
 import pandas as pd
 import pickle
-from car_corpBehavior.src
+from car_corpBehavior.src import model
+
+#pos_label: positive label, '2' means Crops and '1' means Natures in this case.
+"""
+Using default model:
+cpl = model.car_potential_legal(pos_label='2', neg_label='1')
+"""
+cpl =  model.car_potential_legal(model=used_model, pos_label='2', neg_label='1') # init_model
+cpl.fit(X_train, y_train, K=10) # fit
+
+cpl.model.feature_name_ #check feature_name_
+
+#show scores
+for k, v in cpl.scores.items():
+    print(k, end='')
+    if isinstance(v, dict):
+        print()
+        for thresh, score in v.items():
+            print(f'\t{thresh=}: {score:.1%}')
+    else:
+        print(f': {v:.1%}')
+
+#Save trained model.
+with open('./car_corpBehavior/trained_model/trained_cpl.pickle', 'wb') as f:
+    pickle.dump(cpl, f)
 
 
 ```
-3.
-
-
-
-
->1. **pre-process pipeline: 訓練前先選擇做異常偵測與否，並且對缺失值進行處理。**
-
->2. **estimator.fit(): 訓練過程。**
-  目前不同模型的訓練是分散的func，希望有一個類似interface的class能更飯用的輸入不同的模型、訓練、存模型。
->- 利用cross-validation做訓練: n_splits要能設定
->- 有test method ".socres()": 紀錄precision, recall
->- 有attribute ".pred_Kfold": 預想為pd.DataFrame([預估機率, 真實標籤], index=instance_index)
-
->3. **estimator.predict(): 預估過程。**
->- 要有predict_proba()
->- 要有fit_predict()

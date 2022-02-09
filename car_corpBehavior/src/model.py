@@ -14,7 +14,7 @@ from plotly.subplots import make_subplots
 
 """report"""
 from scipy import stats
-from preprocess import featureInsight
+from car_corpBehavior.preprocess import featureInsight
 
 """prepare"""
 from sklearn import model_selection
@@ -22,7 +22,7 @@ from sklearn import base
 from sklearn import exceptions as sk_excpt
 
 """prrprocess"""
-from src import pipe_Xy
+from car_corpBehavior.src import pipe_Xy
 
 """metric"""
 from sklearn import metrics
