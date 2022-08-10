@@ -28,6 +28,7 @@ class pipe_preprocess(base.BaseEstimator, base.TransformerMixin):
             not_use: list of str; 要排除的regex substring，欄位名稱有regex=(?!.*substring)的就排除
             use: list of str; 要使用的regex substring，欄位名稱有regex=(?=.*substring)的就使用
             labels: str; 標籤欄的名稱
+        X =
         """
         mask_cols = filter_columns(X, **kwargs)
         self.feature_name_ = mask_cols[mask_cols].index
@@ -49,13 +50,14 @@ class pipe_preprocess(base.BaseEstimator, base.TransformerMixin):
         except KeyError as e:
             raise Exception('Check columns of training data used in .fit() and columns of input data X.\n Or simply use fit_transform carefully.') from e
 
-        mask_recent = filter_recent(X, **kwargs)
-        X_ = X_[mask_recent] # 把缺少的必要欄位的instances丟掉
-        X_.fillna(0, inplace=True)
+        # mask_recent = filter_recent(X, **kwargs)
+        # X_ = X_[mask_recent] # 把缺少的必要欄位的instances丟掉
+        # X_.fillna(0, inplace=True)
 
         if y is not None and len(X) == len(y):
-            print('hi')
-            y_ = y[mask_recent]
+            # y_ = y[mask_recent]
+            y_ = y
+            # if use_clustering and len(X) > 10:
             mask_anomaly = filter_not_anomaly(X_, y, use_clustering=use_clustering, **kwargs)
             X_ = X_[mask_anomaly]
             y_ = y_[mask_anomaly]
@@ -114,8 +116,11 @@ def filter_not_anomaly(X:pd.DataFrame, y:pd.Series=None, use_clustering=False, a
         Xy = pd.concat([X, y], axis=1)
         mask = pd.Series(False, index=X.index)
         for k, g in Xy.groupby(y.name):
-            mask_g = used_method(g, use_clustering=use_clustering, **kwargs)
-            mask.loc[g.index] = mask_g
+            if len(g) < 10:
+                mask.loc[g.index] = True
+            else:
+                mask_g = used_method(g, use_clustering=use_clustering, **kwargs)
+                mask.loc[g.index] = mask_g
     else:
         mask = used_method(X, use_clustering=use_clustering, **kwargs)
     return mask
@@ -141,12 +146,12 @@ def balanced_sample(df:pd.DataFrame, label='fassured', base_on=1, sample_rate=3,
     return df_con
 
 if __name__ == '__main__':
-    raw = pd.read_parquet('./data/medium_pivot/ptByPerson_險別車種分開_v5.parq')
+    raw = pd.read_parquet('./car_corpBehavior/data/medium_pivot/input_data.parq')
     # mask_cols = filter_columns(raw)
     # raw = raw[mask_cols[mask_cols].index]
     # mask_recent = filter_recent(raw)
     # raw = raw[mask_recent]
-
+    # raw.reset_index(inplace=True)
     X = raw.drop('fassured', axis=1)
     y = raw['fassured']
 

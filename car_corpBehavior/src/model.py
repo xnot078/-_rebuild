@@ -29,7 +29,9 @@ from sklearn import metrics
 
 """alg"""
 from lightgbm import LGBMClassifier
-
+#
+# with open('./car_corpBehavior/data/inp.pickle', 'rb') as f:
+#     X_train, y_train=pickle.load(f)
 
 class cross_validation():
     """
@@ -43,7 +45,7 @@ class cross_validation():
             pred_Kfold: a dataframe of true labels and proba{positive predtion}.
             scores: dict of scores (avg. precisionl, precision & recall under specific positive-proba-thresh.)
     """
-    def __init__(self, X:pd.DataFrame, y:pd.DataFrame, model=None, n_splits=5, random_state=2018, pos_label='2', neg_label='1', **kwargs):
+    def __init__(self, X:pd.DataFrame, y:pd.DataFrame, model=None, n_splits=5, random_state=2018, pos_label=1, neg_label=0, **kwargs):
         pos_label = kwargs.get('pos_label', pos_label)
         neg_label = kwargs.get('neg_label', neg_label)
         pd.options.mode.chained_assignment = None
@@ -75,7 +77,7 @@ class cross_validation():
         return model, pred_Kfold
 
     @staticmethod
-    def scores_process(y_true, y_pred, thresh=[.5, .75, .9], pos_label='2', neg_label='1'):
+    def scores_process(y_true, y_pred, thresh=[.5, .75, .9], pos_label=1, neg_label=0):
         """
         args:
             y_true: array-like; true label of instances.
@@ -91,12 +93,14 @@ class cross_validation():
         scores = {'avg_precision':None, 'precision':defaultdict(dict), 'recall':defaultdict(dict)}
         # scores = defaultdict(lambda: defaultdict(list)) # 各thresh的分數
         scores['avg_precision'] = metrics.average_precision_score(y_true, y_pred, pos_label=pos_label) # 整體平均的avg_precision
+
+        y_true = y_true.astype(str)
         for th in thresh: # 在各thresh下的scores
-            y_pred_label = y_pred>=th
-            y_pred_label[y_pred>=th] = pos_label
-            y_pred_label[~(y_pred>=th)] = neg_label
-            scores['precision'][th] = metrics.precision_score(y_true, y_pred_label, pos_label=pos_label)
-            scores['recall'][th] = metrics.recall_score(y_true, y_pred_label, pos_label=pos_label)
+            y_pred_label = (y_pred>=th).astype(int).astype(str)
+            y_pred_label[y_pred>=th] = str(pos_label)
+            y_pred_label[~(y_pred>=th)] = str(neg_label)
+            scores['precision'][th] = metrics.precision_score(y_true, y_pred_label, pos_label=str(pos_label))
+            scores['recall'][th] = metrics.recall_score(y_true, y_pred_label, pos_label=str(pos_label))
         return scores
 
     @staticmethod
@@ -155,7 +159,8 @@ class car_potential_legal(base.ClassifierMixin, base.BaseEstimator, cross_valida
 
 if __name__ == '__main__':
 
-    raw = pd.read_parquet('./data/medium_pivot/ptByPerson_險別車種分開_v5.parq')
+    # raw = pd.read_parquet('./data/medium_pivot/ptByPerson_險別車種分開_v5.parq')
+    raw = pd.read_parquet('./car_corpBehavior/data/medium_pivot/input_data.parq')
     X, y = raw.drop('fassured', axis=1), raw['fassured']
     """
     1. X preprocess:

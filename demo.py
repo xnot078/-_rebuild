@@ -3,15 +3,26 @@ import pickle
 from lightgbm import LGBMClassifier # not necessary, just for example
 from sklearn import model_selection
 
+from car_corpBehavior.src import preprocess_phase
 from car_corpBehavior.src import model
 from car_corpBehavior.src import pipe_Xy
+#
+# with open('./car_corpBehavior/data/inp.pickle', 'wb') as f:
+#     pickle.dump([X_train, y_train], f)
+# X_train, y_train
 
 if __name__ == '__main__':
 
     """
+    update input_data
+    """
+    raw = preprocess_phase.update_data(return_data=True)
+
+    """
     input data. (type of X, y must be pandas.core.DataFrame and pandas.core.Series.)
     """
-    raw = pd.read_parquet('./car_corpBehavior/data/medium_pivot/ptByPerson_險別車種分開_v5.parq')
+    raw = pd.read_parquet('./car_corpBehavior/data/medium_pivot/input_data.parq')
+    # raw.reset_index(inplace=True)
     X, y = raw.drop('fassured', axis=1), raw['fassured']
 
     """
@@ -24,12 +35,13 @@ if __name__ == '__main__':
     """
     p = pipe_Xy.pipe_preprocess()
     p.fit(X)
-    X_train = p.transform(X, y, use_clustering=True, balanced_label='fassured', balanced_base_on='2')
+    X_train = p.transform(X, y, use_clustering=True, balanced_label='fassured', balanced_base_on=1)
     """
     y preprocess:
         - After X preprocess and balanced-sampling, it's necessary to index y by X.index.
     """
     y_train = y.loc[X_train.index]
+    y_train.value_counts()
 
 
     """
@@ -49,11 +61,11 @@ if __name__ == '__main__':
     Train model.
     pos_label: positive label, '2' means Crops and '1' means Natures in this case.
     """
-    cpl = model.car_potential_legal(model=used_model, pos_label='2', neg_label='1') # init_model
-        """
+    cpl = model.car_potential_legal(model=used_model, pos_label=1, neg_label=0) # init_model
+    """
         Using default model:
         cpl = model.car_potential_legal(pos_label='2', neg_label='1')
-        """
+    """
     cpl.fit(X_train, y_train, K=10) # fit
     cpl.model.feature_name_ #check feature_name_
     for k, v in cpl.scores.items(): #show scores
@@ -68,19 +80,29 @@ if __name__ == '__main__':
     """
     Save trained preprocess pipeline(feature_name_ particularly, i.e. used columns) & model with pickle.
     """
+    with open('./car_corpBehavior/trained_model/feat_pipe.pickle', 'wb') as f:
+        pickle.dump(p, f)
+
     with open('./car_corpBehavior/trained_model/trained_cpl.pickle', 'wb') as f:
         pickle.dump(cpl, f)
 
     """
     Use trained model. (Read saved model with pickle first).
     """
+    raw = pd.read_parquet('./car_corpBehavior/data/medium_pivot/input_data.parq')
+    X, y = raw.drop('fassured', axis=1), raw['fassured']
     with open('./car_corpBehavior/trained_model/trained_cpl.pickle', 'rb') as f:
         trained_cpl2 = pickle.load(f)
+    pred_proba = trained_cpl2.predict_proba(X)
 
-    X_test = X.loc[X.index.difference(X_train.index)]
-    y_test = y.loc[X_test.index]
-    y_test = y_test.apply(lambda x: 1 if x=='2' else 0)
-    y_pred_proba = trained_cpl2.predict_proba(X_test)
+    res = pd.DataFrame([X["iassured"], pred_proba], index=["iassured", "positive_proba"]).T
+    res.to_csv("./car_corpBehavior/trained_model/res.txt", sep='|', index=False)
+
+    # 要先跑上面的36-44行才能跑以下:
+    # X_test = X.loc[X.index.difference(X_train.index)]
+    # y_test = y.loc[X_test.index]
+    # y_test = y_test.apply(lambda x: 1 if x=='2' else 0)
+    # y_pred_proba = trained_cpl2.predict_proba(X_test)
 
 
 
